@@ -1,0 +1,538 @@
+php artisan optimize
+
+==============================================================================
+                Larave installl or git setup process
+==============================================================================
+composer create-project laravel/laravel:^9.0 example-app
+
+composer update  composer install --ignore-platform-req=php
+
+php artisan key:generat
+
+php artisan migrate --seed  or php artisan migrate:refresh --seed 
+
+php artisan storage:link
+
+php artisan serve
+
+ei 3 ta error asle
+composer remove simplesoftwareio/simple-qrcode
+composer remove simplesoftwareio/simple-qrcode
+composer require simplesoftwareio/simple-qrcode
+
+
+laravel project uplode er jonno 
+
+php artisan cache:clear
+php artisan route:clear
+php artisan config:clear
+php artisan view:clear
+php artisan config:cache
+
+
+==============================================================================
+                Larave mail or fomrm e ek sathe page create korte caile ei code 
+==============================================================================
+
+php artisan make:mail ContactFormMail --markdown=admin.contact.contact-form
+
+
+
+
+==============================================================================
+                Larave Error
+==============================================================================
+ image class error =>::   composer require intervention/image
+
+==============================================================================
+                Larave Controller edit
+==============================================================================
+    Route::get('categories', [CategoryController::class, 'index'])->name('categories');
+    Route::get('category/add', [CategoryController::class, 'add'])->name('category.add');
+    Route::post('category/store', [CategoryController::class, 'Store'])->name('category.store');
+    Route::get('category/edit/{id}', [CategoryController::class, 'Edit'])->name('category.edit');
+    Route::post('category/update/{id}', [CategoryController::class, 'Update'])->name('category.update');
+    Route::get('category/delete/{id}', [CategoryController::class, 'Delete'])->name('category.delete');
+
+
+==============================================================================
+                Larave 
+==============================================================================
+          ==========  Auth install code =================
+          composer require laravel/ui 
+          php artisan ui bootstrap --auth
+          npm install && npm run dev
+          
+          
+
+========== User Table code =================
+            $table->id();
+            $table->string('name');
+            $table->integer('role_id')->default(2);  ## 2 mane admin or user login in one login page 
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+
+            
+
+========== Role Model er jonno ekta table create file code =================  Role  id ta kintu user model er vitore inclode kore nite hobe
+
+php artisan make:model Role -m      diye database or model create korte hobe than 
+
+model e giye:  
+protected $fillable = [
+        'name',  
+    ];    
+    
+    or eit ta use kora zabe 
+    /**
+     * The attributes that aren't mass assignable.
+     *
+     * @var array
+     */
+    protected $guarded = [];     // eita dile muloto sob collam er name lekha lage na 
+    
+    
+tar pore amra database er table er giye 
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+
+
+======================= Model e gie Roll model e ekta function muloto relation ship er jonno  ===================================== 
+
+sobar niche giye ei function ta dite hobe :
+public function user(){
+        return $this->hasMany('App\Models\User');
+    }
+
+2nd e User model e giye ei function er maddhome relateion ship korte hobe : ==========================================
+
+protected $fillable = [
+        'name', 'email', 'password','role_id',
+    ];
+
+public function role(){
+        return $this->belongsTo('App\Models\Role');
+    }
+    
+    =================== make middleware ================================================================== 
+php artisan make:middleware AdminMiddleware
+php artisan make:middleware UserMiddleware
+
+now protected kernel.php file -------------------------------------
+'admin' => \App\Http\Middleware\AdminMiddleware::class,
+'user' => \App\Http\Middleware\UserMiddleware::class,
+
+
+
+ ==================== now add below text admin middleware and user middleware =========================================
+ Return next stup e bad diye ei te use korte hobe : ar first e kintu amader auth use kore nite hobe upore 
+ use illumi\support \fasad auth
+ 
+ eta admin middelware er jonno --------------------------
+if (Auth::check() && Auth::user()->role_id == 1) {
+            return $next($request);
+        }else{
+            return redirect()->route('login');
+  }
+
+ eta user middelware er jonno -------------------------
+
+if (Auth::check() && Auth::user()->role_id == 2) {
+            return $next($request);
+        }else{
+            return redirect()->route('login');
+  }
+
+ ==================== than amader ke migrate kore nite hob  ar  =========================================
+
+tar  pore rols table e giye amader manual 2 ta data insert kore hobe 
+id 1 Admin & id 2 User
+
+ ==================== than amader ke Middelware er folder e giye RedirectIfAuthenticated.php name ze file ase oi khane  =========================================
+eta foreach er vitore lekhte hobe 
+
+
+ if (Auth::guard($guard)->check() && Auth::user()->role->id == 1 ) {
+            return redirect()->route('admin.dashboard');
+
+        }elseif (Auth::guard($guard)->check() && Auth::user()->role->id == 2) {
+            return redirect()->route('user.dashboard');
+        }else{
+            return $next($request);
+        } 
+        
+        
+  last er return $next($request); etar dorkar nai
+  
+  
+  ============ now created two controller ================================================================ 
+php artisan make:controller Admin/AdminController
+php artisan make:controller User/UserController
+
+
+======================add web.php ==============================================================================
+
+Route::group(['prefix'=>'admin','middleware' =>['admin','auth'],'namespace'=>'Admin'], function(){
+    Route::get('dashboard',[AdminController::class, 'index'])->name('admin.dashboard');
+});
+
+
+
+Route::group(['prefix'=>'user','middleware' =>['user','auth'],'namespace'=>'User'], function(){
+    Route::get('dashboard',[UserController::class, 'index'])->name('user.dashboard');
+});
+
+        
+      
+============= now goto loginController and add eta auth folder er vitore theke ============================================================= 
+route serveice provider home er niche eita lekhte hobe
+
+
+ protected function redirectTo(){
+        if (Auth()->user()->role_id ==1 ) {
+            return route('admin.dashboard');
+
+        }elseif (Auth()->user()->role_id ==2 ) {
+           return route('user.dashboard');
+        }
+    }
+
+============= now goto registerController and add eta auth folder er vitore theke ============================================================= 
+route serveice provider home er niche eita lekhte hobe
+
+  protected function redirectTo(){
+            if (Auth()->user()->role_id ==1 ) {
+                return route('admin.dashboard');
+
+            }elseif (Auth()->user()->role_id ==2 ) {
+            return route('user.dashboard');
+            }
+        }
+        
+        
+  eita korar pore arektu niche giye  user create  ekta option ase 
+  name er pore 
+  role_id =>2,
+
+
+============ now create two view folder =================================================
+admin
+  -> home.blade.php
+user
+  -> home.blade.php
+============== add on admin/adminController And user Controller ==========
+public function index(){
+        return view('admin.home');
+    }
+public function index(){
+        return view('user.home');
+    }
+
+==============================================================================
+                Available commands for the "migrate" namespace:
+==============================================================================
+
+Available commands for the "migrate" namespace:
+  migrate:fresh     Drop all tables and re-run all migrations
+  migrate:install   Create the migration repository
+  migrate:refresh   Reset and re-run all migrations
+  migrate:reset     Rollback all database migrations
+  migrate:rollback  Rollback the last database migration
+  migrate:status    Show the status of each migration
+
+==============================================================================
+                Laravel Logout er jonn eith ui packages er 
+==============================================================================
+
+            <li><a href="{{ route('logout') }}" class="mega-menu" title="Sign Out" onclick="event.preventDefault();
+                document.getElementById('logout-form').submit();"><i class="zmdi zmdi-power"></i></a>
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                    @csrf
+                </form>
+            </li>
+
+
+
+==============================================================================
+                laravel Mail Setting
+==============================================================================
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=eftyislam30@gmail.com
+MAIL_PASSWORD=rtdwzqxeudgwiqeq
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=eftyislam30@gmail.com
+MAIL_FROM_NAME="${APP_NAME}"
+
+==============================================================================
+                Laravel Image All Packages or setting 
+==============================================================================
+
+composer require intervention/image   // eta package er name eita diye muloto image install korte hoy laravel e
+
+ar ei link e giye baki setting gule     https://image.intervention.io/v2/introduction/installation
+
+use Intervention\Image\Facades\Image;
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<div class="row mb-3">
+                <label for="example-text-input" class="col-sm-2 col-form-label">Profile Image </label>
+                <div class="col-sm-10">
+       <input name="profile_image" class="form-control" type="file"  id="image">
+                </div>
+            </div>
+            <!-- end row -->
+
+              <div class="row mb-3">
+                 <label for="example-text-input" class="col-sm-2 col-form-label">  </label>
+                <div class="col-sm-10">
+                    <img id="showImage" class="rounded avatar-lg" src="{{ (!empty($editData->profile_image))? url('upload/admin_images/'.$editData->profile_image):url('upload/no_image.jpg') }}" alt="Card image cap">
+                </div>
+            </div>
+            <!-- end row -->
+
+
+
+
+
+<script type="text/javascript">
+    
+    $(document).ready(function(){
+        $('#image').change(function(e){
+            var reader = new FileReader();
+            reader.onload = function(e){
+                $('#showImage').attr('src',e.target.result);
+            }
+            reader.readAsDataURL(e.target.files['0']);
+        });
+    });
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==============================================================================
+                Git hub e comment link 
+==============================================================================
+Github all commit dekhar code    git log --all --oneline 
+git log than oi online er link ta 
+tar por ami ki branch e zete cai tar code git reset --hard commit er link ta
+
+
+
+==============================================================================
+                Larave Project Cpanal uplode setup process
+==============================================================================
+
+file zip kora lagbe
+
+database export kora lagbe 
+
+serch bar e giye php  than select php version asbe than php version 7.4  select korte hobe  than current eita click kore dite hobe
+
+
+tar pore file uplode or database setting 
+
+tar pore env file er kaj 
+
+tar pore public folder er kaj 
+
+eta main file e move korete hobe ambong  index file 24 ar 38 no line e kaj korte hobe /.. ei ta kete dite hobe save korte hobe 
+
+
+tar pore congige folder e giye app.png edit 57 no line giye asset url e giye " er vitore sei web site er link dite hobe http soho", 
+
+
+==============================================================================
+              visual studio code extensions
+==============================================================================
+
+Atom one dark theme
+vscode great icons 
+code runner 
+code spell checker 
+autp import 
+beautify 
+getter and setter generator 
+mithril emmet
+
+auto close tag
+auto rename tag
+bootstrap 4, font awesome4 ....
+format html in php
+html css support 
+html snippets 
+javascript es6 code snippets
+live server 
+mysql autocomplete
+database client 
+
+php awesome snippets
+php debug
+php namespace resolver 
+phpcs
+php docblocker
+phpdoc comment 
+
+php intelephense
+prettier code formatter 
+community material theme 
+laravel blade snippets 
+laravel snippets
+laravel artisan
+laravel go to view 
+laravel extra intellisense
+laravel goto components
+laravel blade spacer 
+Laravel Extension Pack
+open in browser
+
+
+===========================================================================================================================
+              StartUp Role Base, Meddellware Auth System All code
+=========================================================================================================================
+
+
+user table ==========
+ $table->id();
+            $table->string('name');
+            $table->integer('role_id')->default(2);
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+========== role table ====== 
+ $table->id();
+            $table->string('name');
+            $table->timestamps();
+
+role model ==============
+protected $fillable = [
+        'name',  
+    ];
+
+    public function user(){
+        return $this->hasMany('App\User');
+    }
+
+user model ================
+   */
+    protected $fillable = [
+        'name', 'email', 'password','role_id',
+    ];
+
+
+    public function role(){
+        return $this->belongsTo('App\Role');
+    }
+
+=================== make middleware ======================== 
+php artisan make:middleware AdminMiddleware
+php artisan make:middleware UserMiddleware
+
+now protected kernel.php file 
+'admin' => \App\Http\Middleware\AdminMiddleware::class,
+'user' => \App\Http\Middleware\UserMiddleware::class,
+
+ ==================== now add below text admin middleware and user middleware ======================
+if (Auth::check() && Auth::user()->role_id == 1) {
+            return $next($request);
+        }else{
+            return redirect()->route('login');
+  }
+
+if (Auth::check() && Auth::user()->role_id == 2) {
+            return $next($request);
+        }else{
+            return redirect()->route('login');
+  }
+
+============ then add RedirectIfAuthenticated.php ================
+ if (Auth::guard($guard)->check() && Auth::user()->role->id == 1 ) {
+            return redirect()->route('admin.dashboard');
+
+        }elseif (Auth::guard($guard)->check() && Auth::user()->role->id == 2) {
+            return redirect()->route('user.dashboard');
+        }else{
+            return $next($request);
+        } 
+
+
+============ now created two controller ========== 
+php artisan make:controller Admin/AdminController
+php artisan make:controller User/UserController
+
+======================add web.php ==============
+
+Route::group(['prefix'=>'admin','middleware' =>['admin','auth'],'namespace'=>'admin'], function(){
+    Route::get('dashboard','AdminController@index')->name('admin.dashboard');
+});
+
+Route::group(['prefix'=>'user','middleware' =>['user','auth'],'namespace'=>'user'], function(){
+    Route::get('dashboard','UserController@index')->name('user.dashboard');
+});
+
+
+============= now goto loginController and add ======== 
+ protected function redirectTo(){
+        if (Auth()->user()->role_id ==1 ) {
+            return route('admin.dashboard');
+
+        }elseif (Auth()->user()->role_id ==2 ) {
+           return route('user.dashboard');
+        }
+    }
+
+also add this registerController =============
+  protected function redirectTo(){
+            if (Auth()->user()->role_id ==1 ) {
+                return route('admin.dashboard');
+
+            }elseif (Auth()->user()->role_id ==2 ) {
+            return route('user.dashboard');
+            }
+        }
+
+
+
+
+
+
+============ now create two view folder ===========
+admin
+  -> home.blade.php
+user
+  -> home.blade.php
+============== add on admin/adminController And user Controller ==========
+public function index(){
+        return view('admin.home');
+    }
+public function index(){
+        return view('user.home');
+    }
+
+
+
+
+
+
