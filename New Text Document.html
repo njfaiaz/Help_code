@@ -139,13 +139,14 @@ Route::group(['prefix'=>'user','middleware' =>['user','auth'],'namespace'=>'User
 ==================== laravel project uplode er jonno   ===============================================================================================
 
 	php artisan cache:clear
-	php artisan route:clear
+	php artisan route:clear *******************
 	php artisan config:clear
 	php artisan view:clear
 	php artisan config:cache
 	php artisan optimize
-	php artisan optimize:clear
-	php artisan optimize
+	php artisan optimize ************
+	php artisan optimize:clear **********
+	
 
 
 
@@ -248,12 +249,31 @@ Route::group(['prefix'=>'user','middleware' =>['user','auth'],'namespace'=>'User
 
 	tarpore main branch e gele dekha zabe ze pull request marge pull request 
 
+	commend diye korea zay marge 
+	first e amader ke main ba master branch e aste hobe 
+	git merge api-authentication ****** ze branch er sathe merge korte caitachi oi branch er name
+	git pull     kore nite hobe main branch e 
+	git push 
+
 
 ================================== Laravel Api ======================================================================================
-  
+
+   	authentication user Packages Laravel Sanctum ********************
+	composer require laravel/sanctum
+
+	php artisan make:request Api/LoginRequest
+	php artisan make:request Api/RegisterRequest
+
+	php artisan make:resource UserResource
+	php artisan make:resource ErrorResource
+	php artisan make:resource SuccessResource
+
+	App\Services\LoginTokenService.php  { hate manualy  create korete hobe 
+	App\Services\RegisterService.php  { hate manualy create korete hobe 
 
 
-
+	login :  get -> headers key-Authorization   value-Bearer login token
+	logout :  get -> headers key-Authorization & _method delete  value-Bearer login token
 
 
    
