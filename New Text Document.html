@@ -143,7 +143,6 @@ Route::group(['prefix'=>'user','middleware' =>['user','auth'],'namespace'=>'User
 	php artisan config:clear
 	php artisan view:clear
 	php artisan config:cache
-	php artisan optimize
 	php artisan optimize ************
 	php artisan optimize:clear **********
 	
@@ -234,6 +233,7 @@ Route::group(['prefix'=>'user','middleware' =>['user','auth'],'namespace'=>'User
 	Github all commit dekhar code    git log --all --oneline 
 	git log than oi online er link ta 
 	tar por ami ki branch e zete cai tar code git reset --hard commit er link ta
+	git push -f github master/main
 
 
 	git branch ..............
@@ -271,11 +271,33 @@ Route::group(['prefix'=>'user','middleware' =>['user','auth'],'namespace'=>'User
 	App\Services\LoginTokenService.php  { hate manualy  create korete hobe 
 	App\Services\RegisterService.php  { hate manualy create korete hobe 
 
+	Header e Accept diye application/json use korle html error asbe na 
+
 
 	login :  get -> headers key-Authorization   value-Bearer login token
 	logout :  get -> headers key-Authorization & _method delete  value-Bearer login token
 
+	laravel e web route e giye route lekhte hobe & ei package te install korte hobe ****** composer require guzzlehttp/guzzle
 
+
+
+	mahmaud vai ------------------------------------------------
+	route servise provider.php
+
+	Route::middleware('api')
+                ->prefix('api/auth')
+                ->group(base_path('routes/auth.php'));
+
+	php artisan make:controller Api/Auth/loginController --invokable
+
+
+	auth token ke envronmanet e set kore kaj 
+	test ->  let jsonData = pm.response.json()
+	let token = jsonData.access_token ? 'Bearer ' + jsonData.access_token : ''
+	pm.environment.set('token',token)
+
+	password reset -----------
+	php artisan make:mail ResetPasswordlink --markdown=emails.reset_password_link
    
 ================================== visual studio code extensions ======================================================================================
 
