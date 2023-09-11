@@ -1,0 +1,510 @@
+01 Install :-> composer require laravel/sanctum
+
+02 publish :-> php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+
+03 app/Http/Kernel.php :-> 
+'api' => [
+    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+    \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+    \Illuminate\Routing\Middleware\SubstituteBindings::class,
+],
+
+04 Controllr Create :-> php artisan make:controller Api/Auth/AuthController
+
+05 :-> Roure create 
+// Public routes ==============================================================================
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+
+// Protected routes ==========================================================================
+Route::group(['middleware' => ['auth:sanctum']], function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
+
+06 :->  
+  php artisan make:request Api/LoginRequest
+	php artisan make:request Api/RegisterRequest
+
+	php artisan make:resource UserResource
+	php artisan make:resource ErrorResource
+	php artisan make:resource SuccessResource
+
+07 :->  app/Http/Controllers/Api/AuthController.php
+
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\LoginRequest;
+use App\Http\Requests\Api\RegisterRequest;
+use App\Http\Resources\SuccessResource;
+use App\Http\Resources\UserResource;
+use App\Services\LoginTokenService;
+use App\Services\RegisterService;
+use Illuminate\Http\Request;
+
+class AuthController extends Controller
+{
+    use RegisterService, LoginTokenService;
+
+    /**
+     * user register
+     * @param App\Http\Requests\Api\RegisterRequest $request
+     * 
+     * @return json
+     */
+    public function register(RegisterRequest $request)
+    {
+        $data = $request->validated();
+        $this->createUser($data);
+        $response['message'] = 'Successfully Registered! Now, Login!';
+        return new SuccessResource($response);
+    }
+
+    /**
+     * user login
+     * @param App\Http\Requests\Api\LoginRequest $request
+     * 
+     * @return json
+     */
+    public function login(LoginRequest $request)
+    {
+        $credentials = $request->validated();
+
+        return $this->loginToken($credentials);
+    }
+
+    /**
+     * authenticate user information
+     * @param Illuminate\Http\Request $request
+     * 
+     * @return json
+     */
+    public function user(Request $request)
+    {
+        $response['data'] = new UserResource($request->user());
+        return new SuccessResource($response);
+    }
+
+    /**
+     * authenticate user logout (token delete)
+     * @param Illuminate\Http\Request $request
+     * 
+     * @return json
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        $response['message'] = 'Successfully Logout!';
+        return new SuccessResource($response);
+    }
+}
+
+
+08 :-> app/Http/Requests/Api/LoginRequest.php
+
+<?php
+
+namespace App\Http\Requests\Api;
+
+use App\Http\Resources\ErrorResource;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Validation\ValidationException;
+
+class LoginRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+    public function authorize()
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array
+     */
+    public function rules()
+    {
+        return [
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @param  \Illuminate\Contracts\Validation\Validator  $validator
+     * @return void
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        $response = (new ErrorResource($validator->errors()))->response()->setStatusCode(422);
+        throw new ValidationException($validator, $response);
+    }
+}
+
+
+09 :-> app/Http/Requests/Api/RegisterRequest.php
+
+<?php
+
+namespace App\Http\Requests\Api;
+
+use App\Http\Resources\ErrorResource;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Validation\ValidationException;
+
+class RegisterRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+    public function authorize()
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array
+     */
+    public function rules()
+    {
+        return [
+            'name'     => 'required|string|min:2|max:20',
+            'email'    => 'required|email|min:8|max:30|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @param  \Illuminate\Contracts\Validation\Validator  $validator
+     * @return void
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        $response = (new ErrorResource($validator->errors()))->response()->setStatusCode(422);
+        throw new ValidationException($validator, $response);
+    }
+}
+
+10 :-> app/Http/Resources/ErrorResource.php
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class ErrorResource extends JsonResource
+{
+
+    /**
+     * The "data" wrapper that should be applied.
+     *
+     * @var string|null
+     */
+    public static $wrap = 'errors';
+
+    /**
+     * Transform the resource into an array.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     */
+    public function toArray($request)
+    {
+        return [
+            'success' => false,
+            'message' => 'Error occurred!',
+            'errors' => parent::toArray($request),
+        ];
+    }
+}
+
+
+11 :-> app/Http/Resources/SuccessResource.php
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class SuccessResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     */
+    public function toArray($request)
+    {
+        // rearrange response
+        $response = parent::toArray($request);
+        $message = array_key_exists('message', $response) ? $response['message'] : 'Data Retrived Successfully!';
+        $data = array_key_exists('data', $response) ? $response['data'] : [];
+
+        return [
+            'success' => true,
+            'message' => $message,
+            'data'    => $data,
+        ];
+    }
+}
+
+12 :->  app/Http/Resources/UserResource.php
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class UserResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     */
+    public function toArray($request)
+    {
+        return [
+            'user' => [
+                'id'         => $this->id,
+                'name'       => $this->name,
+                'email'      => $this->email,
+                'created_at' => $this->created_at->format('Y-m-d'),
+            ]
+        ];
+    }
+}
+
+13 :-> Manual Create koret hobe --- app/Services/LoginTokenService.php
+<?php
+namespace App\Services;
+
+use App\Http\Resources\ErrorResource;
+use App\Http\Resources\SuccessResource;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
+trait LoginTokenService
+{
+    /**
+     * Generate new login token for authenticate user
+     * @param array $credentials
+     * 
+     * @return json
+     */
+    public function loginToken(array $credentials)
+    {
+        $user = User::where('email', $credentials['email'])->first();
+
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            $token = $user->createToken('api');
+
+            $response = [
+                'message' => 'Login Token Generated Successfully!',
+                'data' => [
+                    'token' => $token->plainTextToken
+                ]
+            ];
+
+            return new SuccessResource($response);
+        }
+
+        $errors['email'][] = __('auth.failed');
+        return (new ErrorResource($errors))->response()->setStatusCode(422);
+    }
+}
+
+14 :-> Manual Create korte hobe ---- app/Services/RegisterService.php
+<?php
+namespace App\Services;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Hash;
+
+trait RegisterService
+{
+    /**
+     * Create new user
+     * @param array $data
+     * 
+     * @return App\Models\User $user
+     */
+    public function createUser(array $data) : Model
+    {
+        // user password hashed
+        $data['password'] = Hash::make($data['password']);
+
+        $user = User::create($data);
+        return $user;
+    }
+}
+
+15 :-> app/Http/Middleware/Authenticate.php
+
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Auth\Middleware\Authenticate as Middleware;
+
+class Authenticate extends Middleware
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @param  string[]  ...$guards
+     * @return mixed
+     *
+     * @throws \Illuminate\Auth\AuthenticationException
+     */
+    public function handle($request, Closure $next, ...$guards)
+    {
+        if (empty($guards)) {
+            $guards = [null];
+        }
+
+        foreach ($guards as $guard) {
+            if ($this->auth->guard($guard)->check()) {
+                $this->auth->shouldUse($guard);
+                return $next($request);
+            }
+        }
+
+        // json response for api routes
+        if ($request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized!',
+                'errors' => ['token' => 'The token is invalid!'],
+            ], 401);
+        }
+        // for web routes
+        $this->unauthenticated($request, $guards);
+    }
+
+    /**
+     * Get the path the user should be redirected to when they are not authenticated.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return string|null
+     */
+    protected function redirectTo($request)
+    {
+        if (!$request->expectsJson()) {
+            return route('login');
+        }
+    }
+}
+
+
+16 :-> app/Http/Middleware/RedirectIfAuthenticated.php
+
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Providers\RouteServiceProvider;
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class RedirectIfAuthenticated
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @param  string|null  ...$guards
+     * @return mixed
+     */
+    public function handle(Request $request, Closure $next, ...$guards)
+    {
+        $guards = empty($guards) ? [null] : $guards;
+
+        foreach ($guards as $guard) {
+            if (Auth::guard($guard)->check() && $request->is('api/*')) {
+                // for api routes
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You already logged in!',
+                    'data' => [],
+                ]);
+            } elseif (Auth::guard($guard)->check()) {
+                // for web routes
+                return redirect(RouteServiceProvider::HOME);
+            }
+        }
+
+        return $next($request);
+    }
+}
+
+17 :-> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	================== Exceptions Hendel============================
+	app/Exceptions/Handler.php
+
+	$this->renderable(function (NotFoundHttpException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Record not found!',
+                    'errors' => [],
+                ], 404);
+            }
+        });
+
+	
+	ba ------------------------- route er last er ei ta lekhlew hobe 
+
+	Route::any('{catchall}', [
+    function () {
+        return response()->json([
+            'status'=>false,
+            'message'=>'No Endpoints Found!'
+        ], 404);
+    }
+])->where('catchall', '.*');
+
