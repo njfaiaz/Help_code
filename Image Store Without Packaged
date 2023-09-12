@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Category;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+
+class CategoryController extends Controller
+{
+    public function Category(){
+        $categories = Category::latest()->paginate(15);
+        return view('admin.category.category_index',compact('categories'));
+    } // End Category
+
+    public function CategoryAdd(){
+        return view('admin.category.category_add');
+    } // End CategoryAdd
+
+    public function CategoryStore(Request $request){
+
+        $image = $request->file('image');
+        $name_gen = time().'.'.$image->getClientOriginalExtension();
+        $save_url = 'images/categories/'.$name_gen;
+
+        $image->move(public_path('images/categories'), $name_gen);
+
+        Category::insert([
+            'name' => $request->name,
+            'slug' => strtolower(str_replace(' ', '-',$request->name)),
+            'description' => $request->description,
+            'image' => $save_url,
+            'created_at' => Carbon::now(),
+        ]);
+
+        return redirect()->route('category');
+
+    }// End CategoryStore
+
+    public function CategoryEdit($id){
+        $category = Category::findOrFail($id);
+        return view('admin.category.category_edit',compact('category'));
+    }// End CategoryEdit
+
+    public function CategoryUpdate(Request $request){
+
+        $cat_id = $request->id;
+        $old_img = $request->old_image;
+
+        if ($request->file('image')) {
+
+            $image = $request->file('image');
+            $name_gen = time().'.'.$image->getClientOriginalExtension();
+            $save_url = 'images/categories/'.$name_gen;
+
+            $image->move(public_path('images/categories'), $name_gen);
+
+        if (file_exists($old_img)) {
+           unlink($old_img);
+        }
+
+        Category::findOrFail($cat_id)->update([
+            'name' => $request->name,
+            'slug' => strtolower(str_replace(' ', '-',$request->name)),
+            'description' => $request->description,
+            'image' => $save_url,
+            'updated_at' => Carbon::now(),
+        ]);
+
+        return redirect()->route('category');
+
+        } else {
+
+             Category::findOrFail($cat_id)->update([
+                'name' => $request->name,
+                'slug' => strtolower(str_replace(' ', '-',$request->name)),
+                'description' => $request->description,
+                'updated_at' => Carbon::now(),
+        ]);
+
+
+        return redirect()->route('category');
+
+        } // end else
+    }// End CategoryUpdate
+
+
+    public function CategoryDelete($id){
+
+        $category = Category::findOrFail($id);
+        $img = $category->image;
+        unlink($img );
+
+        Category::findOrFail($id)->delete();
+
+        return redirect()->back();
+
+    }// End Method
+}
