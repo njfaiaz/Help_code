@@ -73,3 +73,36 @@ $(document).ready(function() {
     }
   });
 });
+
+
+ba ----------------------------------------------------------
+
+<script>
+$(document).ready(function() {
+  $("#basic-form").validate({
+    rules: {
+
+      name : {
+        required: true
+      },
+      price : {
+        required: true
+      },
+      description : {
+        required: true
+      },
+      stock_in : {
+        required: true
+      },
+      discount : {
+        required: true
+      },
+      image : {
+        required: true
+      },
+
+
+    },
+  });
+});
+</script>
