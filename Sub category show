@@ -1,0 +1,38 @@
+    <script type="text/javascript">
+
+        $(document).ready(function(){
+            $('select[name="category_id"]').on('change', function(){
+                var category_id = $(this).val();
+                if (category_id) {
+                    $.ajax({
+                        url: "{{ url('admin/subcategory/ajax') }}/"+category_id,
+                        type: "GET",
+                        dataType:"json",
+                        success:function(data){
+                            $('select[name="subcategory_id"]').html('');
+                            var d =$('select[name="subcategory_id"]').empty();
+                            $.each(data, function(key, value){
+                                $('select[name="subcategory_id"]').append('<option value="'+ value.id + '">' + value.name + '</option>');
+                            });
+                        },
+
+                    });
+                } else {
+                    alert('danger');
+                }
+            });
+        });
+
+</script>
+
+
+sub category contorller  
+    public function GetSubCategory($category_id){
+        $subcat = SubCategory::where('category_id',$category_id)->orderBy('name','ASC')->get();
+            return json_encode($subcat);
+
+    }// End Method
+
+ Route::get('/subcategory/ajax/{category_id}', [SubCategoryController::class, 'GetSubCategory']);
+
+
