@@ -94,6 +94,60 @@ class CategoryController extends Controller
 
         Category::findOrFail($id)->delete();
 
+
+
+
+
+        // Multiple Image Store ----------------------------------------------
+        $images = $request->file('images');
+        foreach ($images as $img) {
+
+            $image = rand().'.'.$img->getClientOriginalExtension();
+            $uploadPath = 'images/products/'.$image;
+
+            $img->move(public_path('images/products'), $image);
+
+            ProductImage::insert([
+                'product_id' => $product_id,
+                'image' => $uploadPath,
+            ]);
+        }
+
+// MultiImage Update ----------------------------------------------
+    public function MultiImageUpdate (Request $request){
+        $imgs = $request ->images;
+        foreach ($imgs as $id => $img) {
+            $imgDel = ProductImage::findOrFail($id);
+            unlink($imgDel->image);
+
+            $image = rand().'.'.$img->getClientOriginalExtension();
+            $uploadPath = 'images/products/'.$image;
+
+            $img->move(public_path('images/products'), $image);
+
+            ProductImage::where('id',$id)->update([
+                'image' => $uploadPath,
+            ]);
+            $notification=array(
+                'message'=>'Product Multiple Image Update Successfully ',
+                'alert-type'=>'success'
+            );
+            return Redirect()->back()->with($notification);
+        }
+    }
+
+        // MultiImage Delete ---------------------------------------------------------------------
+
+        public function MultiImageDelete ($id){
+            $oldImg = ProductImage::findOrFail($id);
+            unlink($oldImg->image);
+            ProductImage::findOrFail($id)->delete();
+            $notification=array(
+                'message'=>'Product Multiple Image Delete Successfully ',
+                'alert-type'=>'success'
+            );
+            return Redirect()->back()->with($notification);
+        } // end method
         return redirect()->back();
 
     }// End Method
