@@ -43,7 +43,7 @@ composer require simplesoftwareio/simple-qrcode
             $table->timestamps();
 
 
-***** User Model e all   protected $guarded = []; ****************
+***** User Model e all   protected $guarded = []; ba protected $guarded = ['id'];   ****************
 
 ============ Middleware ===================================================================================================================================
 	  
